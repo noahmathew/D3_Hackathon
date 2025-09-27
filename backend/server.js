@@ -34,6 +34,7 @@ const appointmentRoutes = require('./routes/appointments');
 const forecastingRoutes = require('./routes/forecasting');
 const optimizationRoutes = require('./routes/optimization');
 const analyticsRoutes = require('./routes/analytics');
+const mlEnhancedRoutes = require('./routes/ml-enhanced');
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -41,6 +42,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/forecasting', forecastingRoutes);
 app.use('/api/optimization', optimizationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/ml', mlEnhancedRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

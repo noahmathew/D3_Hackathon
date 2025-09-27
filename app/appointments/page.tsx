@@ -1,5 +1,5 @@
 import { Navigation } from "@/components/navigation"
-import { AppointmentBooking } from "@/components/appointment-booking"
+import { SmartAppointmentBooking } from "@/components/smart-appointment-booking"
 
 export default function AppointmentsPage() {
   return (
@@ -13,9 +13,9 @@ export default function AppointmentsPage() {
             doctor.
           </p>
         </div>
-        <div>
-          <AppointmentBooking />
-        </div>
+            <div>
+              <SmartAppointmentBooking />
+            </div>
       </div>
     </main>
   )

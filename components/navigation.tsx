@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Phone, Calendar, User, BookOpen, MapPin } from "lucide-react"
+import { Menu, X, Phone, Calendar, User, BookOpen, MapPin, Activity } from "lucide-react"
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -13,6 +13,7 @@ export function Navigation() {
     { href: "/appointments", label: "Book Appointment", icon: Calendar },
     { href: "/doctors", label: "Our Doctors", icon: User },
     { href: "/patient-portal", label: "Patient Portal", icon: User },
+    { href: "/operations", label: "Operations Dashboard", icon: Activity },
     { href: "/health-resources", label: "Health Resources", icon: BookOpen },
     { href: "/contact", label: "Contact", icon: MapPin },
   ]
