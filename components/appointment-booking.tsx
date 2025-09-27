@@ -13,8 +13,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CalendarIcon, Clock, Phone, Mail, MapPin, Calendar as CalendarIcon2 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/auth-context"
+import { LoginForm } from "@/components/auth/login-form"
+import { RegisterForm } from "@/components/auth/register-form"
 
 export function AppointmentBooking() {
+  const { patient, addAppointment, getAllAppointments, isAuthenticated } = useAuth()
+  const [showLogin, setShowLogin] = useState(true)
   const [selectedDate, setSelectedDate] = useState<Date>()
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
   const [selectedDay, setSelectedDay] = useState(new Date().getDate())
@@ -22,19 +27,19 @@ export function AppointmentBooking() {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([])
   
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    dateOfBirth: "",
+    firstName: patient?.firstName || "",
+    lastName: patient?.lastName || "",
+    email: patient?.email || "",
+    phone: patient?.phone || "",
+    dateOfBirth: patient?.dateOfBirth || "",
     doctor: "",
     appointmentType: "",
     timeSlot: "",
     reason: "",
-    isNewPatient: false,
-    insurance: "",
-    emergencyContact: "",
-    emergencyPhone: "",
+    isNewPatient: patient?.isNewPatient || false,
+    insurance: patient?.insurance || "",
+    emergencyContact: patient?.emergencyContact || "",
+    emergencyPhone: patient?.emergencyPhone || "",
   })
 
   const doctors = [
@@ -78,11 +83,39 @@ export function AppointmentBooking() {
     "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM", "5:00 PM"
   ]
 
-  // Simulate available time slots based on date and doctor
+  // Get available time slots based on date and doctor
   const getAvailableTimeSlots = (date: Date, doctor: string) => {
-    // Simulate some slots being unavailable
-    const unavailableSlots = ["9:00 AM", "2:30 PM", "4:00 PM"] // Example unavailable slots
-    return allTimeSlots.filter(slot => !unavailableSlots.includes(slot))
+    // Get all existing appointments
+    const allAppointments = getAllAppointments()
+    
+    // Format date to match appointment date format (avoid timezone issues)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const dateString = `${year}-${month}-${day}`
+    
+    // Find appointments for this specific date and doctor
+    const conflictingAppointments = allAppointments.filter(apt => 
+      apt.date === dateString && 
+      apt.doctor === doctor &&
+      apt.status === 'scheduled' // Only check scheduled appointments
+    )
+    
+    // Get occupied time slots
+    const occupiedSlots = conflictingAppointments.map(apt => apt.time)
+    
+    // Mock availability logic - in real app, this would check against database
+    const dayOfWeek = date.getDay()
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+    
+    if (isWeekend) {
+      return [] // No weekend appointments
+    }
+    
+    // Filter out occupied time slots and return available ones
+    const availableSlots = allTimeSlots.filter(slot => !occupiedSlots.includes(slot))
+    
+    return availableSlots
   }
 
   // Handle date selection changes
@@ -90,14 +123,18 @@ export function AppointmentBooking() {
     setSelectedMonth(month)
     setSelectedDay(day)
     setSelectedYear(year)
-    
+
     const newDate = new Date(year, month, day)
     setSelectedDate(newDate)
-    
+
+    // Get doctor name from ID
+    const selectedDoctor = doctors.find(d => d.id === formData.doctor)
+    const doctorName = selectedDoctor ? selectedDoctor.name : ""
+
     // Update available time slots when date changes
-    const availableSlots = getAvailableTimeSlots(newDate, formData.doctor)
+    const availableSlots = getAvailableTimeSlots(newDate, doctorName)
     setAvailableTimeSlots(availableSlots)
-    
+
     // Reset time slot selection if current selection is not available
     if (!availableSlots.includes(formData.timeSlot)) {
       setFormData(prev => ({ ...prev, timeSlot: "" }))
@@ -114,10 +151,61 @@ export function AppointmentBooking() {
       alert("Please select a time slot for your appointment.")
       return
     }
+    if (!formData.doctor) {
+      alert("Please select a doctor for your appointment.")
+      return
+    }
     
-    // Handle form submission
-    console.log("Appointment booking:", { ...formData, date: selectedDate })
-    alert("Appointment request submitted! We'll contact you within 24 hours to confirm.")
+    // Get doctor name from ID
+    const selectedDoctor = doctors.find(d => d.id === formData.doctor)
+    if (!selectedDoctor) {
+      alert("Please select a valid doctor.")
+      return
+    }
+    
+    // Create appointment object with proper date format (avoid timezone issues)
+    const year = selectedDate.getFullYear()
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0')
+    const day = String(selectedDate.getDate()).padStart(2, '0')
+    const dateString = `${year}-${month}-${day}`
+    
+    const appointment = {
+      date: dateString, // Format: YYYY-MM-DD (local date, no timezone conversion)
+      time: formData.timeSlot,
+      doctor: selectedDoctor.name, // Store doctor name, not ID
+      appointmentType: formData.appointmentType,
+      reason: formData.reason,
+      status: 'scheduled' as const,
+      notes: `Insurance: ${formData.insurance || 'Not specified'}`
+    }
+    
+    
+    // Add appointment to patient's record
+    addAppointment(appointment)
+    
+    // Reset form
+    setFormData({
+      firstName: patient?.firstName || "",
+      lastName: patient?.lastName || "",
+      email: patient?.email || "",
+      phone: patient?.phone || "",
+      dateOfBirth: patient?.dateOfBirth || "",
+      doctor: "",
+      appointmentType: "",
+      timeSlot: "",
+      reason: "",
+      isNewPatient: patient?.isNewPatient || false,
+      insurance: patient?.insurance || "",
+      emergencyContact: patient?.emergencyContact || "",
+      emergencyPhone: patient?.emergencyPhone || "",
+    })
+    setSelectedDate(undefined)
+    setSelectedMonth(new Date().getMonth())
+    setSelectedDay(new Date().getDate())
+    setSelectedYear(new Date().getFullYear())
+    setAvailableTimeSlots([])
+    
+    alert("Appointment scheduled successfully! You can view it in your Patient Portal.")
   }
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -125,7 +213,10 @@ export function AppointmentBooking() {
     
     // Update available time slots when doctor changes
     if (field === "doctor" && selectedDate) {
-      const availableSlots = getAvailableTimeSlots(selectedDate, value as string)
+      const selectedDoctor = doctors.find(d => d.id === value)
+      const doctorName = selectedDoctor ? selectedDoctor.name : ""
+      
+      const availableSlots = getAvailableTimeSlots(selectedDate, doctorName)
       setAvailableTimeSlots(availableSlots)
       
       // Reset time slot selection if current selection is not available
@@ -133,6 +224,36 @@ export function AppointmentBooking() {
         setFormData(prev => ({ ...prev, timeSlot: "" }))
       }
     }
+  }
+
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-md mx-auto">
+        {showLogin ? (
+          <LoginForm 
+            onSuccess={() => {}} 
+            onSwitchToRegister={() => setShowLogin(false)}
+          />
+        ) : (
+          <RegisterForm 
+            onSuccess={() => {}} 
+            onSwitchToLogin={() => setShowLogin(true)}
+          />
+        )}
+        <div className="mt-6 p-4 bg-muted rounded-md">
+          <p className="text-sm text-muted-foreground text-center">
+            <strong>Please log in to book an appointment.</strong><br />
+            Your appointments will be saved to your Patient Portal.
+          </p>
+        </div>
+        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-md">
+          <p className="text-sm text-blue-700 dark:text-blue-300 text-center">
+            <strong>Demo Tip:</strong> Try booking for December 15th, 2024 with Dr. Sarah Smith to see conflict checking in action!
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -307,32 +428,66 @@ export function AppointmentBooking() {
 
                 <div className="space-y-2">
                   <Label>Preferred Time *</Label>
-                  <Select value={formData.timeSlot} onValueChange={(value) => handleInputChange("timeSlot", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={selectedDate ? "Select available time" : "Select a date first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {selectedDate && availableTimeSlots.length > 0 ? (
-                        availableTimeSlots.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))
-                      ) : selectedDate && availableTimeSlots.length === 0 ? (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          No available slots for this date
+                  {selectedDate && formData.doctor ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-3 gap-2">
+                        {allTimeSlots.map((time) => {
+                          const isAvailable = availableTimeSlots.includes(time)
+                          const isSelected = formData.timeSlot === time
+                          
+                          return (
+                            <button
+                              key={time}
+                              type="button"
+                              onClick={() => isAvailable ? handleInputChange("timeSlot", time) : null}
+                              disabled={!isAvailable}
+                              className={cn(
+                                "px-3 py-2 text-sm rounded-md border transition-colors",
+                                isSelected && isAvailable
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : isAvailable
+                                    ? "bg-background hover:bg-accent hover:text-accent-foreground border-border"
+                                    : "bg-muted text-muted-foreground border-muted cursor-not-allowed opacity-50"
+                              )}
+                            >
+                              {time}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-background border border-border rounded"></div>
+                          <span>Available</span>
                         </div>
-                      ) : (
-                        <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                          Please select a date first
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-muted rounded"></div>
+                          <span>Unavailable</span>
                         </div>
+                      </div>
+                      {availableTimeSlots.length > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                          {availableTimeSlots.length} available time slots
+                        </p>
                       )}
-                    </SelectContent>
-                  </Select>
-                  {selectedDate && availableTimeSlots.length > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {availableTimeSlots.length} available time slots
+                  {availableTimeSlots.length === 0 && (
+                    <p className="text-sm text-destructive">
+                      No available time slots for this date and doctor
                     </p>
+                  )}
+                    </div>
+                  ) : selectedDate && !formData.doctor ? (
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="text-sm text-muted-foreground">
+                        Please select a doctor first to see available time slots
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-muted rounded-md">
+                      <p className="text-sm text-muted-foreground">
+                        Please select a date first to see available time slots
+                      </p>
+                    </div>
                   )}
                 </div>
 

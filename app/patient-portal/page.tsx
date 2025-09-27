@@ -1,5 +1,5 @@
 import { Navigation } from "@/components/navigation"
-import { PatientPortal } from "@/components/patient-portal"
+import { PatientPortal } from "@/components/patient-portal-new"
 
 export default function PatientPortalPage() {
   return (
