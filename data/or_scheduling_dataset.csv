@@ -1,0 +1,51 @@
+surgery_id,patient_id,procedure,duration_min,surgeon,anesthesia_team,recovery_bed_needed
+S001,P066,Knee Surgery,150,Dr. Singh,B,True
+S002,P027,Appendectomy,60,Dr. Kim,C,False
+S003,P027,Gallbladder Removal,90,Dr. Wong,D,True
+S004,P095,Hip Replacement,120,Dr. Patel,C,True
+S005,P100,Hip Replacement,120,Dr. Patel,A,True
+S006,P048,Hip Replacement,120,Dr. Patel,A,False
+S007,P043,Hip Replacement,120,Dr. Patel,D,False
+S008,P052,Heart Bypass,180,Dr. Lee,C,False
+S009,P072,Hip Replacement,120,Dr. Patel,C,True
+S010,P001,Hip Replacement,120,Dr. Patel,B,False
+S011,P032,Heart Bypass,180,Dr. Lee,A,False
+S012,P041,Gallbladder Removal,90,Dr. Wong,D,False
+S013,P069,Gallbladder Removal,90,Dr. Wong,A,False
+S014,P049,Appendectomy,60,Dr. Kim,D,True
+S015,P022,Appendectomy,60,Dr. Kim,A,True
+S016,P068,Gallbladder Removal,90,Dr. Wong,A,False
+S017,P081,Knee Surgery,150,Dr. Singh,C,False
+S018,P060,Hip Replacement,120,Dr. Patel,C,True
+S019,P027,Knee Surgery,150,Dr. Singh,D,True
+S020,P067,Knee Surgery,150,Dr. Singh,A,False
+S021,P014,Appendectomy,60,Dr. Kim,B,True
+S022,P056,Hip Replacement,120,Dr. Patel,B,False
+S023,P090,Knee Surgery,150,Dr. Singh,D,True
+S024,P058,Hip Replacement,120,Dr. Patel,B,False
+S025,P050,Knee Surgery,150,Dr. Singh,B,False
+S026,P070,Gallbladder Removal,90,Dr. Wong,D,False
+S027,P020,Appendectomy,60,Dr. Kim,A,True
+S028,P081,Hip Replacement,120,Dr. Patel,C,True
+S029,P031,Hip Replacement,120,Dr. Patel,C,False
+S030,P015,Appendectomy,60,Dr. Kim,B,True
+S031,P089,Hip Replacement,120,Dr. Patel,C,False
+S032,P066,Heart Bypass,180,Dr. Lee,B,False
+S033,P045,Hip Replacement,120,Dr. Patel,D,True
+S034,P090,Hip Replacement,120,Dr. Patel,B,False
+S035,P042,Appendectomy,60,Dr. Kim,A,False
+S036,P059,Knee Surgery,150,Dr. Singh,B,False
+S037,P078,Appendectomy,60,Dr. Kim,B,True
+S038,P040,Heart Bypass,180,Dr. Lee,B,True
+S039,P001,Gallbladder Removal,90,Dr. Wong,D,True
+S040,P014,Gallbladder Removal,90,Dr. Wong,D,True
+S041,P048,Knee Surgery,150,Dr. Singh,D,False
+S042,P083,Gallbladder Removal,90,Dr. Wong,A,True
+S043,P008,Appendectomy,60,Dr. Kim,D,False
+S044,P088,Heart Bypass,180,Dr. Lee,A,True
+S045,P030,Heart Bypass,180,Dr. Lee,B,False
+S046,P047,Hip Replacement,120,Dr. Patel,D,True
+S047,P027,Gallbladder Removal,90,Dr. Wong,D,False
+S048,P032,Gallbladder Removal,90,Dr. Wong,A,False
+S049,P058,Knee Surgery,150,Dr. Singh,A,False
+S050,P068,Appendectomy,60,Dr. Kim,B,True

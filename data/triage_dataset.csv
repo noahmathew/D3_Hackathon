@@ -1,0 +1,101 @@
+patient_id,arrival_time,severity_score,condition,doctor_needed,bed_available
+P001,08:00,2,Head trauma,Cardiologist,False
+P002,08:05,5,Stroke,General Practitioner,False
+P003,08:10,10,Fracture,Neurologist,False
+P004,08:15,8,Sprained leg,General Practitioner,True
+P005,08:20,9,Head trauma,Cardiologist,True
+P006,08:25,7,Fracture,Immunologist,True
+P007,08:30,2,Fever,Orthopedist,False
+P008,08:35,9,Fracture,Cardiologist,False
+P009,08:40,7,Stroke,Cardiologist,False
+P010,08:45,7,Chest pain,General Practitioner,True
+P011,08:50,8,Chest pain,Cardiologist,True
+P012,08:55,3,Chest pain,Orthopedist,False
+P013,09:00,2,Chest pain,Cardiologist,False
+P014,09:05,10,Head trauma,Neurologist,True
+P015,09:10,1,Fracture,Cardiologist,True
+P016,09:15,3,Head trauma,Cardiologist,False
+P017,09:20,9,Stroke,Orthopedist,False
+P018,09:25,7,Chest pain,Orthopedist,True
+P019,09:30,2,Fever,General Practitioner,True
+P020,09:35,8,Sprained leg,Cardiologist,False
+P021,09:40,6,Fracture,General Practitioner,False
+P022,09:45,5,Sprained leg,Orthopedist,False
+P023,09:50,8,Stroke,Orthopedist,True
+P024,09:55,6,Stroke,Cardiologist,True
+P025,10:00,2,Allergic reaction,Neurologist,True
+P026,10:05,9,Stroke,Cardiologist,False
+P027,10:10,3,Stroke,Cardiologist,True
+P028,10:15,8,Allergic reaction,Immunologist,False
+P029,10:20,10,Fever,Cardiologist,True
+P030,10:25,6,Head trauma,Orthopedist,False
+P031,10:30,10,Chest pain,Orthopedist,True
+P032,10:35,7,Sprained leg,Orthopedist,True
+P033,10:40,7,Sprained leg,General Practitioner,False
+P034,10:45,2,Fever,Immunologist,False
+P035,10:50,1,Stroke,General Practitioner,False
+P036,10:55,4,Stroke,Orthopedist,False
+P037,11:00,4,Fracture,Immunologist,False
+P038,11:05,1,Sprained leg,Cardiologist,True
+P039,11:10,5,Stroke,Orthopedist,False
+P040,11:15,9,Fever,Immunologist,False
+P041,11:20,6,Fracture,Immunologist,False
+P042,11:25,7,Fracture,Immunologist,True
+P043,11:30,5,Fever,Cardiologist,False
+P044,11:35,1,Fracture,Neurologist,False
+P045,11:40,4,Head trauma,Neurologist,False
+P046,11:45,7,Stroke,General Practitioner,False
+P047,11:50,8,Sprained leg,Cardiologist,True
+P048,11:55,8,Head trauma,Cardiologist,False
+P049,12:00,2,Chest pain,Cardiologist,True
+P050,12:05,3,Chest pain,Cardiologist,False
+P051,12:10,9,Allergic reaction,Orthopedist,False
+P052,12:15,4,Stroke,Neurologist,False
+P053,12:20,7,Fever,Neurologist,False
+P054,12:25,9,Fracture,Neurologist,False
+P055,12:30,5,Allergic reaction,Orthopedist,False
+P056,12:35,1,Allergic reaction,Neurologist,True
+P057,12:40,8,Chest pain,General Practitioner,False
+P058,12:45,8,Allergic reaction,Neurologist,True
+P059,12:50,1,Fracture,Cardiologist,False
+P060,12:55,2,Head trauma,General Practitioner,True
+P061,13:00,5,Sprained leg,Orthopedist,True
+P062,13:05,2,Stroke,Orthopedist,False
+P063,13:10,8,Allergic reaction,Cardiologist,False
+P064,13:15,7,Stroke,Neurologist,True
+P065,13:20,10,Fever,Orthopedist,True
+P066,13:25,3,Chest pain,Cardiologist,False
+P067,13:30,4,Chest pain,Orthopedist,False
+P068,13:35,3,Stroke,Immunologist,False
+P069,13:40,10,Sprained leg,Neurologist,False
+P070,13:45,3,Head trauma,Neurologist,True
+P071,13:50,8,Stroke,Orthopedist,False
+P072,13:55,10,Fracture,Immunologist,True
+P073,14:00,6,Sprained leg,General Practitioner,False
+P074,14:05,5,Fracture,Immunologist,True
+P075,14:10,8,Allergic reaction,Orthopedist,False
+P076,14:15,2,Allergic reaction,General Practitioner,True
+P077,14:20,5,Chest pain,Immunologist,True
+P078,14:25,7,Stroke,Orthopedist,False
+P079,14:30,9,Sprained leg,Orthopedist,True
+P080,14:35,7,Fracture,General Practitioner,False
+P081,14:40,10,Stroke,Neurologist,False
+P082,14:45,8,Stroke,Neurologist,False
+P083,14:50,4,Fever,Immunologist,True
+P084,14:55,6,Chest pain,Orthopedist,True
+P085,15:00,1,Chest pain,General Practitioner,True
+P086,15:05,5,Sprained leg,Immunologist,True
+P087,15:10,3,Fracture,Neurologist,False
+P088,15:15,5,Allergic reaction,Neurologist,True
+P089,15:20,4,Allergic reaction,Orthopedist,True
+P090,15:25,10,Stroke,General Practitioner,True
+P091,15:30,5,Fracture,Orthopedist,True
+P092,15:35,1,Stroke,Immunologist,False
+P093,15:40,6,Allergic reaction,Orthopedist,False
+P094,15:45,1,Chest pain,Neurologist,True
+P095,15:50,3,Stroke,Neurologist,False
+P096,15:55,7,Fever,Orthopedist,False
+P097,16:00,10,Sprained leg,Orthopedist,True
+P098,16:05,2,Allergic reaction,Cardiologist,True
+P099,16:10,6,Allergic reaction,Neurologist,True
+P100,16:15,1,Fever,Immunologist,True

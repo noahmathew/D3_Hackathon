@@ -1,0 +1,81 @@
+transport_id,patient_id,origin,destination,urgency,est_travel_min
+T001,P024,Ward 1,ICU,High,4
+T002,P002,ED,Ward 2,Medium,2
+T003,P055,Ward 2,ED,High,19
+T004,P014,Ward 2,ED,Medium,16
+T005,P035,Radiology,Ward 1,High,13
+T006,P058,Ward 3,Radiology,High,16
+T007,P031,Ward 2,OR,Medium,14
+T008,P095,OR,ED,Medium,3
+T009,P061,ICU,Ward 2,Low,13
+T010,P077,ICU,ED,High,7
+T011,P100,Ward 3,ED,Low,18
+T012,P001,Ward 3,Radiology,Low,18
+T013,P028,Radiology,OR,Medium,18
+T014,P053,Radiology,Ward 2,High,19
+T015,P017,OR,Ward 3,High,19
+T016,P073,Ward 2,Ward 3,Medium,17
+T017,P018,Radiology,Ward 2,Low,14
+T018,P072,ICU,OR,High,18
+T019,P048,Ward 1,ICU,Low,15
+T020,P019,ICU,OR,High,4
+T021,P058,Ward 3,Ward 2,Medium,15
+T022,P013,Ward 1,ED,High,11
+T023,P012,Ward 3,Ward 1,Medium,17
+T024,P045,Radiology,ED,High,11
+T025,P095,Radiology,OR,Medium,2
+T026,P074,Ward 1,ED,High,9
+T027,P035,Ward 2,ED,Low,8
+T028,P086,ED,Ward 3,High,7
+T029,P088,ICU,Ward 1,Medium,16
+T030,P045,Ward 2,Ward 1,Low,18
+T031,P014,Ward 2,Radiology,Medium,18
+T032,P032,Radiology,OR,Low,8
+T033,P059,ED,Radiology,High,15
+T034,P043,ICU,Ward 3,Medium,14
+T035,P030,Ward 1,ICU,High,11
+T036,P037,Ward 2,Radiology,Low,5
+T037,P027,OR,ED,High,11
+T038,P015,Ward 1,OR,Medium,19
+T039,P022,Ward 1,ICU,Low,2
+T040,P100,ED,Ward 3,Medium,5
+T041,P052,OR,Ward 2,High,8
+T042,P050,ED,Ward 3,Medium,10
+T043,P096,Radiology,Ward 2,Medium,19
+T044,P012,Ward 2,Ward 3,Medium,17
+T045,P002,ED,Ward 3,Low,13
+T046,P011,Ward 3,Ward 1,Medium,20
+T047,P088,Radiology,Ward 3,Low,10
+T048,P033,Ward 3,ICU,Medium,18
+T049,P065,Ward 2,Ward 3,Medium,9
+T050,P013,OR,Ward 1,Medium,3
+T051,P022,Ward 1,Ward 2,Medium,11
+T052,P034,Radiology,Ward 1,Low,4
+T053,P038,ICU,OR,Medium,17
+T054,P097,OR,Radiology,High,10
+T055,P051,Radiology,Ward 3,High,6
+T056,P043,ICU,Ward 2,Low,2
+T057,P029,ED,Ward 1,Low,7
+T058,P019,Radiology,ED,Low,18
+T059,P029,Ward 2,Ward 3,Medium,8
+T060,P028,Ward 1,Ward 3,High,4
+T061,P004,ED,OR,Medium,18
+T062,P065,Ward 2,Radiology,High,14
+T063,P100,Ward 3,ED,Medium,19
+T064,P040,Radiology,Ward 1,Medium,15
+T065,P050,ED,OR,High,4
+T066,P046,Ward 3,ICU,High,20
+T067,P088,Ward 3,Ward 2,Low,4
+T068,P096,Ward 2,ED,Low,3
+T069,P031,Ward 2,Ward 1,Medium,4
+T070,P086,ICU,Ward 3,Low,13
+T071,P086,ICU,Ward 2,High,19
+T072,P070,ICU,OR,Medium,13
+T073,P048,Ward 3,ED,High,13
+T074,P047,OR,Ward 2,High,2
+T075,P045,Ward 2,ED,Low,10
+T076,P078,Radiology,Ward 2,Medium,15
+T077,P080,Ward 2,ICU,High,5
+T078,P048,ED,Ward 1,Medium,15
+T079,P042,OR,Ward 3,Medium,12
+T080,P093,ICU,Ward 1,Low,5
