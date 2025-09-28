@@ -16,7 +16,7 @@ class QuantumScheduler:
     def load_patient_queue(self):
         """Load current patient queue from CSV"""
         try:
-            self.patient_queue = pd.read_csv('../data/patient_queue_dataset.csv')
+            self.patient_queue = pd.read_csv('../../data/patient_queue_dataset.csv')
             # Ensure priority calculation
             self.patient_queue['priority_score'] = self.calculate_priority_scores()
             print("✅ Patient queue loaded successfully", file=sys.stderr)
@@ -109,9 +109,9 @@ class QuantumScheduler:
             # Store results
             self.grover_results = {
                 'algorithm': 'Grover',
-                'n_qubits': n_qubits,
-                'iterations': iterations,
-                'marked_states': M,
+                'n_qubits': int(n_qubits),
+                'iterations': int(iterations),
+                'marked_states': int(M),
                 'top_patients': grover_patients.to_dict('records') if not grover_patients.empty else [],
                 'probabilities': {str(idx): float(probs[idx]) for idx in found_indices[:10]},
                 'classical_top': self.patient_queue.sort_values('priority_score', ascending=False).head(top_k).to_dict('records')
@@ -145,9 +145,9 @@ class QuantumScheduler:
         advantage = classical_ops / quantum_ops if quantum_ops > 0 else 1
         
         return {
-            'speedup_factor': advantage,
-            'classical_complexity': classical_ops,
-            'quantum_complexity': quantum_ops,
+            'speedup_factor': float(advantage),
+            'classical_complexity': float(classical_ops),
+            'quantum_complexity': float(quantum_ops),
             'theoretical_advantage': f"{advantage:.2f}x faster than classical"
         }
     
@@ -232,14 +232,14 @@ class QuantumScheduler:
             return {
                 'success': True,
                 'delay_expected': delay_expected,
-                'estimated_delay_minutes': final_delay,
-                'delay_probability': delay_probability,
+                'estimated_delay_minutes': int(final_delay),
+                'delay_probability': float(delay_probability),
                 'reason': reason,
                 'queue_status': {
-                    'total_patients': total_patients,
-                    'critical_patients': critical_patients,
-                    'high_priority_patients': high_priority_patients,
-                    'average_wait_time': round(avg_wait_time, 1),
+                    'total_patients': int(total_patients),
+                    'critical_patients': int(critical_patients),
+                    'high_priority_patients': int(high_priority_patients),
+                    'average_wait_time': float(round(avg_wait_time, 1)),
                     'quantum_scheduler_used': True,
                     'grover_algorithm_results': grover_result.get('grover_results', {})
                 }
@@ -263,12 +263,12 @@ class QuantumScheduler:
             grover_result = self.run_grover_algorithm(top_k=10)
             
             queue_stats = {
-                'total_patients': len(self.patient_queue),
-                'critical_patients': len([p for p in self.patient_queue['priority_score'] if p > 0.9]),
-                'high_priority_patients': len([p for p in self.patient_queue['priority_score'] if p > 0.7]),
-                'average_wait_time': round(self.patient_queue['wait_time_minutes'].mean(), 1),
-                'max_wait_time': self.patient_queue['wait_time_minutes'].max(),
-                'departments': self.patient_queue['department'].value_counts().to_dict(),
+                'total_patients': int(len(self.patient_queue)),
+                'critical_patients': int(len([p for p in self.patient_queue['priority_score'] if p > 0.9])),
+                'high_priority_patients': int(len([p for p in self.patient_queue['priority_score'] if p > 0.7])),
+                'average_wait_time': float(round(self.patient_queue['wait_time_minutes'].mean(), 1)),
+                'max_wait_time': int(self.patient_queue['wait_time_minutes'].max()),
+                'departments': {k: int(v) for k, v in self.patient_queue['department'].value_counts().to_dict().items()},
                 'grover_algorithm': grover_result.get('grover_results', {}) if grover_result['success'] else {},
                 'last_updated': datetime.now().isoformat()
             }

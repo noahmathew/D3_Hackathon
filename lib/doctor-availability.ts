@@ -113,15 +113,22 @@ export const generateDoctorAvailability = (): DoctorAvailability[] => {
   const availability: DoctorAvailability[] = []
 
   doctors.forEach(doctor => {
-    // Generate working days (Monday to Friday for most, some work weekends)
+    // Generate working days (most work weekdays, many work weekends too)
     const workingDays = [1, 2, 3, 4, 5] // Monday to Friday
-    if (Math.random() > 0.7) {
-      workingDays.push(6) // Some work Saturdays
+    if (Math.random() > 0.3) {
+      workingDays.push(6) // 70% work Saturdays
+    }
+    if (Math.random() > 0.5) {
+      workingDays.push(0) // 50% work Sundays
     }
 
     // Generate working hours (most work 9-17, some have different hours)
     const startHour = Math.random() > 0.8 ? 8 : 9
-    const endHour = Math.random() > 0.8 ? 18 : 17
+    // Extend working hours, especially for weekend doctors
+    const isWeekendDoctor = workingDays.includes(0) || workingDays.includes(6)
+    const endHour = isWeekendDoctor 
+      ? (Math.random() > 0.5 ? 20 : 19) // Weekend doctors work until 7-8 PM
+      : (Math.random() > 0.8 ? 18 : 17) // Regular doctors work until 5-6 PM
 
     const doctorAvailability: DoctorAvailability = {
       doctorId: doctor.id,
@@ -138,21 +145,27 @@ export const generateDoctorAvailability = (): DoctorAvailability[] => {
       date.setDate(date.getDate() + i)
       const dateString = date.toISOString().split('T')[0]
       const dayOfWeek = date.getDay()
+      const isToday = i === 0
 
       // Skip if doctor doesn't work on this day
       if (!workingDays.includes(dayOfWeek)) {
         continue
       }
 
-      // Skip weekends for most doctors (except those who work weekends)
-      if (dayOfWeek === 0 && !workingDays.includes(0)) {
-        continue
-      }
-
       doctorAvailability.availableTimeSlots[dateString] = {}
+
+      // Get current hour for today's filtering
+      const currentHour = isToday ? new Date().getHours() : 0
+
+      // For today, check if there are any future hours available
+      const hasFutureSlots = !isToday || (currentHour + 1 < endHour)
 
       // Generate hourly slots from start to end hour
       for (let hour = startHour; hour < endHour; hour++) {
+        // For today, skip past hours (add 30 minute buffer)
+        if (isToday && hour <= currentHour) {
+          continue
+        }
         const hourString = `${hour.toString().padStart(2, '0')}:00`
         
         // Randomly make some slots unavailable

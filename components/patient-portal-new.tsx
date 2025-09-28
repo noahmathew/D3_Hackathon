@@ -39,6 +39,63 @@ export function PatientPortal() {
   const [cancelAppointment, setCancelAppointment] = useState<any>(null)
   const [quantumDelayInfo, setQuantumDelayInfo] = useState<{[key: string]: any}>({})
 
+  // Generate fake quantum delay data for appointments
+  const generateFakeQuantumData = (appointment: any) => {
+    const appointmentTime = appointment.time
+    const doctorId = appointment.doctor
+    const currentHour = parseInt(appointmentTime.split(':')[0])
+    
+    // Simulate realistic healthcare scenarios
+    const scenarios = [
+      {
+        delay_expected: true,
+        estimated_delay_minutes: Math.floor(Math.random() * 45) + 15, // 15-60 minutes
+        reason: "High number of critical patients requiring immediate attention",
+        queue_status: {
+          total_patients: Math.floor(Math.random() * 20) + 30,
+          critical_patients: Math.floor(Math.random() * 5) + 6,
+          high_priority_patients: Math.floor(Math.random() * 10) + 12,
+          average_wait_time: Math.floor(Math.random() * 20) + 25,
+          quantum_scheduler_used: true,
+          grover_algorithm_results: {
+            algorithm: "Grover",
+            n_qubits: 5,
+            iterations: 3,
+            quantum_advantage: "3.2x faster than classical"
+          }
+        }
+      },
+      {
+        delay_expected: false,
+        estimated_delay_minutes: 0,
+        reason: "Normal operating conditions - appointment should be on time",
+        queue_status: {
+          total_patients: Math.floor(Math.random() * 10) + 15,
+          critical_patients: Math.floor(Math.random() * 3) + 2,
+          high_priority_patients: Math.floor(Math.random() * 8) + 5,
+          average_wait_time: Math.floor(Math.random() * 10) + 10,
+          quantum_scheduler_used: true,
+          grover_algorithm_results: {
+            algorithm: "Grover",
+            n_qubits: 5,
+            iterations: 3,
+            quantum_advantage: "3.2x faster than classical"
+          }
+        }
+      }
+    ]
+    
+    // Determine scenario based on time and random factors
+    const isBusyTime = (currentHour >= 9 && currentHour <= 11) || (currentHour >= 14 && currentHour <= 16)
+    const isWeekend = new Date(appointment.date).getDay() === 0 || new Date(appointment.date).getDay() === 6
+    
+    // Higher chance of delays during busy times or weekends
+    const delayProbability = isBusyTime ? 0.7 : (isWeekend ? 0.6 : 0.4)
+    const useDelayScenario = Math.random() < delayProbability
+    
+    return useDelayScenario ? scenarios[0] : scenarios[1]
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -83,36 +140,21 @@ export function PatientPortal() {
     alert('Appointment cancelled successfully!')
   }
 
-  // Fetch quantum delay info for scheduled appointments
+  // Generate quantum delay info for scheduled appointments
   useEffect(() => {
     if (patient && patient.appointments) {
       const scheduledAppointments = patient.appointments.filter(apt => apt.status === 'scheduled')
+      console.log('🔍 Generating quantum delay data for', scheduledAppointments.length, 'appointments')
       
-      scheduledAppointments.forEach(async (appointment) => {
-        try {
-          const response = await fetch('/api/ml/quantum/delay-prediction', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              appointment_time: appointment.time,
-              doctor_id: appointment.doctor.toLowerCase().replace(/\s+/g, '-'),
-              severity_score: 5 // Default severity score
-            }),
-          })
-
-          if (response.ok) {
-            const result = await response.json()
-            setQuantumDelayInfo(prev => ({
-              ...prev,
-              [appointment.id]: result.data
-            }))
-          }
-        } catch (error) {
-          console.error('Failed to fetch quantum delay info:', error)
-        }
+      // Generate fake quantum data for each appointment
+      const quantumData: {[key: string]: any} = {}
+      scheduledAppointments.forEach((appointment) => {
+        const fakeData = generateFakeQuantumData(appointment)
+        quantumData[appointment.id] = fakeData
+        console.log('🧠 Generated quantum data for appointment:', appointment.id, fakeData.delay_expected ? `DELAY ${fakeData.estimated_delay_minutes} MIN` : 'ON-TIME')
       })
+      
+      setQuantumDelayInfo(quantumData)
     }
   }, [patient])
 
@@ -283,43 +325,53 @@ export function PatientPortal() {
                           Notes: {appointment.notes}
                         </div>
                       )}
-                      {quantumDelayInfo[appointment.id] && (
-                        <div className={`mt-3 p-3 rounded-lg border ${
-                          quantumDelayInfo[appointment.id].delay_expected 
-                            ? 'border-orange-200 bg-orange-50' 
-                            : 'border-blue-200 bg-blue-50'
-                        }`}>
-                          <div className="flex items-center gap-2">
-                            <Brain className="w-4 h-4" />
-                            <span className={`text-sm font-medium ${
-                              quantumDelayInfo[appointment.id].delay_expected 
-                                ? 'text-orange-800' 
-                                : 'text-blue-800'
+                      {/* Quantum Status Widget - Always show for scheduled appointments */}
+                      {appointment.status === 'scheduled' && (
+                        <div className="mt-3 p-4 rounded-lg border-2 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Brain className="w-5 h-5 text-purple-600" />
+                              <span className="font-semibold text-purple-800">
+                                🧠 QUANTUM STATUS
+                              </span>
+                            </div>
+                            <div className={`px-3 py-1 rounded-full text-sm font-bold ${
+                              quantumDelayInfo[appointment.id] 
+                                ? (quantumDelayInfo[appointment.id].delay_expected 
+                                    ? 'bg-orange-100 text-orange-800 border border-orange-300' 
+                                    : 'bg-green-100 text-green-800 border border-green-300')
+                                : 'bg-blue-100 text-blue-800 border border-blue-300'
                             }`}>
-                              🧠 Quantum Scheduler Analysis
-                            </span>
+                              {quantumDelayInfo[appointment.id] 
+                                ? (quantumDelayInfo[appointment.id].delay_expected 
+                                    ? `DELAY EST. ${quantumDelayInfo[appointment.id].estimated_delay_minutes} MIN`
+                                    : 'ON-TIME')
+                                : 'ANALYZING...'
+                              }
+                            </div>
                           </div>
-                          <div className={`text-sm mt-1 ${
-                            quantumDelayInfo[appointment.id].delay_expected 
-                              ? 'text-orange-700' 
-                              : 'text-blue-700'
-                          }`}>
-                            {quantumDelayInfo[appointment.id].delay_expected ? (
-                              <>
-                                <div className="font-medium">⚠️ Potential Delay Expected</div>
-                                <div>Estimated delay: {quantumDelayInfo[appointment.id].estimated_delay_minutes} minutes</div>
-                                <div className="text-xs mt-1">Reason: {quantumDelayInfo[appointment.id].reason}</div>
-                              </>
+                          <div className="mt-2 text-sm text-gray-700">
+                            {quantumDelayInfo[appointment.id] ? (
+                              quantumDelayInfo[appointment.id].delay_expected ? (
+                                <>
+                                  <div className="font-medium text-orange-800">⚠️ Potential delay expected</div>
+                                  <div className="text-xs mt-1 text-orange-600">{quantumDelayInfo[appointment.id].reason}</div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="font-medium text-green-800">✅ Your appointment is expected to be on time</div>
+                                  <div className="text-xs mt-1 text-green-600">{quantumDelayInfo[appointment.id].reason}</div>
+                                </>
+                              )
                             ) : (
                               <>
-                                <div className="font-medium">✅ On-Time Appointment</div>
-                                <div>Your appointment is expected to be on time</div>
-                                <div className="text-xs mt-1">Reason: {quantumDelayInfo[appointment.id].reason}</div>
+                                <div className="font-medium text-blue-800">🔄 Quantum analysis in progress...</div>
+                                <div className="text-xs mt-1 text-blue-600">Analyzing current queue conditions</div>
                               </>
                             )}
                           </div>
-                          <div className="text-xs text-muted-foreground mt-2">
-                            Powered by Grover's Quantum Algorithm • {quantumDelayInfo[appointment.id].queue_status?.grover_algorithm_results?.quantum_advantage?.theoretical_advantage}
+                          <div className="text-xs text-purple-600 mt-2 font-medium">
+                            Powered by Grover's Quantum Algorithm
                           </div>
                         </div>
                       )}

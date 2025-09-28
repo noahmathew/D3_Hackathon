@@ -30,10 +30,11 @@ class MLService {
           pythonPath: 'python3',
           pythonOptions: ['-u'],
           scriptPath: this.pythonPath,
-          args: []
+          args: [],
+          timeout: 30000 // 30 second timeout
         };
 
-        const pyshell = new PythonShell('test_simple.py', options);
+        const pyshell = new PythonShell('ml_service.py', options);
         
         // Send request data
         pyshell.send(JSON.stringify(requestData));
@@ -298,6 +299,13 @@ class MLService {
       };
 
       const result = await this.callMLService(requestData);
+      
+      // Check if ML service returned fallback response
+      if (result && result.fallback === true) {
+        console.log('🔄 ML service unavailable, using fallback quantum delay prediction');
+        return this.getFallbackQuantumDelay(appointmentTime, doctorId, severityScore);
+      }
+      
       return result;
 
     } catch (error) {
@@ -334,8 +342,8 @@ class MLService {
     const criticalPatients = Math.floor(Math.random() * 8) + 2;
     const highPriorityPatients = Math.floor(Math.random() * 15) + 5;
     
-    const delayExpected = criticalPatients > 5 || (highPriorityPatients > 10 && isBusyTime);
-    const estimatedDelay = delayExpected ? Math.floor(Math.random() * 30) + 10 : 0;
+    const delayExpected = criticalPatients > 3 || (highPriorityPatients > 8 && isBusyTime) || Math.random() > 0.7;
+    const estimatedDelay = delayExpected ? Math.floor(Math.random() * 45) + 15 : 0;
     
     return {
       success: true,

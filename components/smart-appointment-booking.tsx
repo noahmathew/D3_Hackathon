@@ -315,36 +315,46 @@ export function SmartAppointmentBooking({ className }: SmartAppointmentBookingPr
             </Alert>
           )}
 
-          {quantumDelayInfo && (
-            <Alert className={`${quantumDelayInfo.delay_expected ? 'border-orange-200 bg-orange-50 text-orange-800' : 'border-blue-200 bg-blue-50 text-blue-800'}`}>
-              <BrainIcon className="h-4 w-4" />
-              <AlertDescription>
-                <div className="space-y-2">
-                  <div className="font-semibold">
-                    🧠 Quantum Scheduler Analysis
-                  </div>
-                  <div>
-                    {quantumDelayInfo.delay_expected ? (
-                      <>
-                        <div className="font-medium">⚠️ Potential Delay Expected</div>
-                        <div>Estimated delay: {quantumDelayInfo.estimated_delay_minutes} minutes</div>
-                        <div className="text-sm">Reason: {quantumDelayInfo.reason}</div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="font-medium">✅ On-Time Appointment</div>
-                        <div>Your appointment is expected to be on time</div>
-                        <div className="text-sm">Reason: {quantumDelayInfo.reason}</div>
-                      </>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Powered by Grover's Quantum Algorithm • {quantumDelayInfo.queue_status?.grover_algorithm_results?.quantum_advantage?.theoretical_advantage}
-                  </div>
+      {quantumDelayInfo && (
+        <Alert className="border-2 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+          <BrainIcon className="h-5 w-5 text-purple-600" />
+          <AlertDescription>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-purple-800 text-lg">
+                  🧠 QUANTUM STATUS
                 </div>
-              </AlertDescription>
-            </Alert>
-          )}
+                <div className={`px-4 py-2 rounded-full text-sm font-bold ${
+                  quantumDelayInfo.delay_expected 
+                    ? 'bg-orange-100 text-orange-800 border border-orange-300' 
+                    : 'bg-green-100 text-green-800 border border-green-300'
+                }`}>
+                  {quantumDelayInfo.delay_expected 
+                    ? `DELAY EST. ${quantumDelayInfo.estimated_delay_minutes} MIN`
+                    : 'ON-TIME'
+                  }
+                </div>
+              </div>
+              <div>
+                {quantumDelayInfo.delay_expected ? (
+                  <>
+                    <div className="font-medium text-orange-800">⚠️ Potential delay expected</div>
+                    <div className="text-sm text-orange-600 mt-1">Reason: {quantumDelayInfo.reason}</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="font-medium text-green-800">✅ Your appointment is expected to be on time</div>
+                    <div className="text-sm text-green-600 mt-1">Reason: {quantumDelayInfo.reason}</div>
+                  </>
+                )}
+              </div>
+              <div className="text-xs text-purple-600 font-medium">
+                Powered by Grover's Quantum Algorithm
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
           {bookingError && (
             <Alert variant="destructive">
@@ -422,25 +432,33 @@ export function SmartAppointmentBooking({ className }: SmartAppointmentBookingPr
                     Selected: <strong>{getDoctorName(formData.doctor)}</strong>
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Available dates for the next 30 days:
+                    Available dates starting today (next 30 days):
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                  {availableDates.slice(0, 12).map((date) => (
-                    <Button
-                      key={date}
-                      type="button"
-                      variant={formData.date === date ? "default" : "outline"}
-                      className="text-xs"
-                      onClick={() => handleDateSelect(date)}
-                    >
-                      {new Date(date).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric' 
-                      })}
-                    </Button>
-                  ))}
+                  {availableDates.slice(0, 12).map((date) => {
+                    const isToday = date === new Date().toISOString().split('T')[0]
+                    return (
+                      <Button
+                        key={date}
+                        type="button"
+                        variant={formData.date === date ? "default" : "outline"}
+                        className={`text-xs ${isToday ? 'ring-2 ring-blue-500' : ''}`}
+                        onClick={() => handleDateSelect(date)}
+                      >
+                        <div className="flex flex-col items-center">
+                          {new Date(date).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })}
+                          {isToday && (
+                            <span className="text-[10px] font-medium text-blue-600">TODAY</span>
+                          )}
+                        </div>
+                      </Button>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -462,6 +480,20 @@ export function SmartAppointmentBooking({ className }: SmartAppointmentBookingPr
                     Change Date
                   </Button>
                 </div>
+
+                {formData.date === new Date().toISOString().split('T')[0] && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">
+                        Booking for Today
+                      </span>
+                    </div>
+                    <p className="text-sm text-blue-700 mt-1">
+                      You can book an appointment for today! Available time slots are shown below.
+                    </p>
+                  </div>
+                )}
                 
                 <div className="bg-muted/30 p-4 rounded-lg">
                   <p className="text-sm text-muted-foreground">
