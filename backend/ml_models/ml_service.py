@@ -15,6 +15,7 @@ from ed_triage_optimizer import EDTriageOptimizer
 from or_scheduling_optimizer import ORSchedulingOptimizer
 from transport_routing_optimizer import TransportRoutingOptimizer
 from appointment_forecasting_optimizer import AppointmentForecastingOptimizer
+from quantum_scheduler import QuantumScheduler
 
 def convert_to_json_serializable(obj):
     """Convert numpy/TensorFlow types to JSON-serializable Python types"""
@@ -42,6 +43,7 @@ class HealthcareMLService:
             self.or_optimizer = ORSchedulingOptimizer()
             self.transport_optimizer = TransportRoutingOptimizer()
             self.appointment_optimizer = AppointmentForecastingOptimizer()
+            self.quantum_scheduler = QuantumScheduler()
             
             print("✅ All ML models initialized successfully", file=sys.stderr)
             
@@ -66,6 +68,12 @@ class HealthcareMLService:
             elif request_type == 'appointment_forecasting':
                 return self.handle_appointment_forecasting(request_data)
             
+            elif request_type == 'quantum_delay_prediction':
+                return self.handle_quantum_delay_prediction(request_data)
+            
+            elif request_type == 'quantum_queue_status':
+                return self.handle_quantum_queue_status(request_data)
+            
             else:
                 return {
                     'success': False,
@@ -74,7 +82,9 @@ class HealthcareMLService:
                         'ed_triage_optimization',
                         'or_scheduling_optimization', 
                         'transport_routing_optimization',
-                        'appointment_forecasting'
+                        'appointment_forecasting',
+                        'quantum_delay_prediction',
+                        'quantum_queue_status'
                     ]
                 }
                 
@@ -183,6 +193,50 @@ class HealthcareMLService:
             return {
                 'success': False,
                 'error': f'Appointment Forecasting error: {str(e)}',
+                'timestamp': datetime.now().isoformat()
+            }
+    
+    def handle_quantum_delay_prediction(self, request_data):
+        """Handle Quantum Delay Prediction requests"""
+        try:
+            appointment_time = request_data.get('appointment_time', '14:00')
+            doctor_id = request_data.get('doctor_id', 'dr-smith')
+            severity_score = request_data.get('severity_score', 5)
+            
+            result = self.quantum_scheduler.predict_appointment_delay(
+                appointment_time, doctor_id, severity_score
+            )
+            
+            return {
+                'success': True,
+                'type': 'quantum_delay_prediction',
+                'result': result,
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Quantum Delay Prediction error: {str(e)}',
+                'timestamp': datetime.now().isoformat()
+            }
+    
+    def handle_quantum_queue_status(self, request_data):
+        """Handle Quantum Queue Status requests"""
+        try:
+            result = self.quantum_scheduler.get_queue_status()
+            
+            return {
+                'success': True,
+                'type': 'quantum_queue_status',
+                'result': result,
+                'timestamp': datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'error': f'Quantum Queue Status error: {str(e)}',
                 'timestamp': datetime.now().isoformat()
             }
 

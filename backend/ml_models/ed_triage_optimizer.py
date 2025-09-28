@@ -4,10 +4,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 
-import tensorflow as tf
-from keras.models import Sequential
-from keras.layers import Dense, LSTM, Dropout
-TENSORFLOW_AVAILABLE = True
+# TensorFlow removed - using scikit-learn only
+TENSORFLOW_AVAILABLE = False
 
 import json
 import sys

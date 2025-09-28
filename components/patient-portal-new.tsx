@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,18 +26,18 @@ import {
   Mail,
   LogOut,
   Stethoscope,
+  Brain,
 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { LoginForm } from "@/components/auth/login-form"
 import { RegisterForm } from "@/components/auth/register-form"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
 export function PatientPortal() {
   const { patient, logout, updateAppointment, isAuthenticated, isLoading } = useAuth()
   const [showLogin, setShowLogin] = useState(true)
-  const [rescheduleAppointment, setRescheduleAppointment] = useState<any>(null)
   const [cancelAppointment, setCancelAppointment] = useState<any>(null)
+  const [quantumDelayInfo, setQuantumDelayInfo] = useState<{[key: string]: any}>({})
 
   if (isLoading) {
     return (
@@ -74,15 +74,6 @@ export function PatientPortal() {
   const completedAppointments = patient.appointments.filter(apt => apt.status === 'completed')
   const cancelledAppointments = patient.appointments.filter(apt => apt.status === 'cancelled')
 
-  const handleReschedule = (appointmentId: string, newDate: string, newTime: string) => {
-    updateAppointment(appointmentId, {
-      date: newDate,
-      time: newTime,
-      notes: `Rescheduled from original appointment`
-    })
-    setRescheduleAppointment(null)
-    alert('Appointment rescheduled successfully!')
-  }
 
   const handleCancel = (appointmentId: string) => {
     updateAppointment(appointmentId, {
@@ -91,6 +82,39 @@ export function PatientPortal() {
     setCancelAppointment(null)
     alert('Appointment cancelled successfully!')
   }
+
+  // Fetch quantum delay info for scheduled appointments
+  useEffect(() => {
+    if (patient && patient.appointments) {
+      const scheduledAppointments = patient.appointments.filter(apt => apt.status === 'scheduled')
+      
+      scheduledAppointments.forEach(async (appointment) => {
+        try {
+          const response = await fetch('/api/ml/quantum/delay-prediction', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              appointment_time: appointment.time,
+              doctor_id: appointment.doctor.toLowerCase().replace(/\s+/g, '-'),
+              severity_score: 5 // Default severity score
+            }),
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            setQuantumDelayInfo(prev => ({
+              ...prev,
+              [appointment.id]: result.data
+            }))
+          }
+        } catch (error) {
+          console.error('Failed to fetch quantum delay info:', error)
+        }
+      })
+    }
+  }, [patient])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -259,97 +283,75 @@ export function PatientPortal() {
                           Notes: {appointment.notes}
                         </div>
                       )}
+                      {quantumDelayInfo[appointment.id] && (
+                        <div className={`mt-3 p-3 rounded-lg border ${
+                          quantumDelayInfo[appointment.id].delay_expected 
+                            ? 'border-orange-200 bg-orange-50' 
+                            : 'border-blue-200 bg-blue-50'
+                        }`}>
+                          <div className="flex items-center gap-2">
+                            <Brain className="w-4 h-4" />
+                            <span className={`text-sm font-medium ${
+                              quantumDelayInfo[appointment.id].delay_expected 
+                                ? 'text-orange-800' 
+                                : 'text-blue-800'
+                            }`}>
+                              🧠 Quantum Scheduler Analysis
+                            </span>
+                          </div>
+                          <div className={`text-sm mt-1 ${
+                            quantumDelayInfo[appointment.id].delay_expected 
+                              ? 'text-orange-700' 
+                              : 'text-blue-700'
+                          }`}>
+                            {quantumDelayInfo[appointment.id].delay_expected ? (
+                              <>
+                                <div className="font-medium">⚠️ Potential Delay Expected</div>
+                                <div>Estimated delay: {quantumDelayInfo[appointment.id].estimated_delay_minutes} minutes</div>
+                                <div className="text-xs mt-1">Reason: {quantumDelayInfo[appointment.id].reason}</div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="font-medium">✅ On-Time Appointment</div>
+                                <div>Your appointment is expected to be on time</div>
+                                <div className="text-xs mt-1">Reason: {quantumDelayInfo[appointment.id].reason}</div>
+                              </>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-2">
+                            Powered by Grover's Quantum Algorithm • {quantumDelayInfo[appointment.id].queue_status?.grover_algorithm_results?.quantum_advantage?.theoretical_advantage}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       {appointment.status === 'scheduled' && (
-                        <>
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                Reschedule
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Reschedule Appointment</DialogTitle>
-                                <DialogDescription>
-                                  Reschedule your appointment with {appointment.doctor}
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div>
-                                  <Label>New Date</Label>
-                                  <Input 
-                                    type="date" 
-                                    min={new Date().toISOString().split('T')[0]}
-                                    onChange={(e) => setRescheduleAppointment({
-                                      ...appointment,
-                                      newDate: e.target.value
-                                    })}
-                                  />
-                                </div>
-                                <div>
-                                  <Label>New Time</Label>
-                                  <Select onValueChange={(value) => setRescheduleAppointment(prev => ({
-                                    ...prev,
-                                    newTime: value
-                                  }))}>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select new time" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="9:00 AM">9:00 AM</SelectItem>
-                                      <SelectItem value="10:00 AM">10:00 AM</SelectItem>
-                                      <SelectItem value="11:00 AM">11:00 AM</SelectItem>
-                                      <SelectItem value="2:00 PM">2:00 PM</SelectItem>
-                                      <SelectItem value="3:00 PM">3:00 PM</SelectItem>
-                                      <SelectItem value="4:00 PM">4:00 PM</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <Button 
-                                  onClick={() => {
-                                    if (rescheduleAppointment?.newDate && rescheduleAppointment?.newTime) {
-                                      // Ensure date is in correct format (YYYY-MM-DD)
-                                      const dateValue = rescheduleAppointment.newDate
-                                      handleReschedule(appointment.id, dateValue, rescheduleAppointment.newTime)
-                                    }
-                                  }}
-                                  className="w-full"
-                                >
-                                  Confirm Reschedule
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                          
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                Cancel
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Cancel Appointment</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to cancel your appointment with {appointment.doctor} on {format(new Date(appointment.date), 'EEEE, MMMM d, yyyy')} at {appointment.time}?
-                                  <br /><br />
-                                  This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleCancel(appointment.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Cancel Appointment
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              Cancel
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Cancel Appointment</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to cancel your appointment with {appointment.doctor} on {format(new Date(appointment.date), 'EEEE, MMMM d, yyyy')} at {appointment.time}?
+                                <br /><br />
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep Appointment</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleCancel(appointment.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Cancel Appointment
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
                   </div>

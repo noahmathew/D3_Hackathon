@@ -9,178 +9,270 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CalendarIcon, ClockIcon, BrainIcon, ZapIcon, UsersIcon } from 'lucide-react'
-import { apiService, MLAppointmentForecast, OptimalTimeSlot, PatientPreferences } from '@/lib/api-enhanced'
+import { CalendarIcon, ClockIcon, BrainIcon, ZapIcon, UsersIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react'
+import { apiService, MLAppointmentForecast } from '@/lib/api-enhanced'
 import { useAuth } from '@/contexts/auth-context'
+import { cn } from '@/lib/utils'
+import { 
+  generateDoctorAvailability, 
+  getAvailableDates, 
+  getAvailableTimeSlots,
+  isTimeSlotAvailable,
+  getDoctorInfo,
+  DoctorAvailability
+} from '@/lib/doctor-availability'
 
 interface SmartAppointmentBookingProps {
   className?: string
 }
 
+interface TimeSlot {
+  time: string
+  available: boolean
+  reason?: string
+  forecast?: {
+    optimal_score: number
+    estimated_wait_time: number
+    efficiency: number
+    recommendation: string
+  }
+}
+
 export function SmartAppointmentBooking({ className }: SmartAppointmentBookingProps) {
-  const { patient, isAuthenticated } = useAuth()
+  const { patient, isAuthenticated, addAppointment } = useAuth()
   const [mlHealth, setMLHealth] = useState<{ ml_service_available: boolean; models_loaded: boolean }>({
     ml_service_available: false,
     models_loaded: false
   })
   const [isLoading, setIsLoading] = useState(false)
-  const [forecast, setForecast] = useState<MLAppointmentForecast | null>(null)
-  const [selectedSlot, setSelectedSlot] = useState<OptimalTimeSlot | null>(null)
-  const [showPreferences, setShowPreferences] = useState(false)
-  const [patientPreferences, setPatientPreferences] = useState<PatientPreferences>({})
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false)
+  const [bookingError, setBookingError] = useState<string | null>(null)
+
+  // Doctor availability data
+  const [doctorAvailability, setDoctorAvailability] = useState<DoctorAvailability[]>([])
+  const [availableDates, setAvailableDates] = useState<string[]>([])
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<TimeSlot[]>([])
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null)
+  const [timeSlotForecast, setTimeSlotForecast] = useState<any>(null)
+  const [quantumDelayInfo, setQuantumDelayInfo] = useState<any>(null)
 
   // Form data
   const [formData, setFormData] = useState({
-    date: '',
     doctor: '',
+    date: '',
+    time: '',
     appointmentType: 'General Consultation',
     reason: '',
-    preferredTime: '',
     notes: ''
   })
 
-  const doctors = [
-    { id: 'dr-smith', name: 'Dr. Sarah Smith', specialty: 'Internal Medicine' },
-    { id: 'dr-johnson', name: 'Dr. Michael Johnson', specialty: 'Cardiology' },
-    { id: 'dr-williams', name: 'Dr. Emily Williams', specialty: 'Pediatrics' },
-    { id: 'dr-brown', name: 'Dr. David Brown', specialty: 'Orthopedics' },
-    { id: 'dr-davis', name: 'Dr. Lisa Davis', specialty: 'Dermatology' }
-  ]
+  // Current step in the booking process
+  const [currentStep, setCurrentStep] = useState<'doctor' | 'date' | 'time' | 'details'>('doctor')
 
   const appointmentTypes = [
     'General Consultation',
-    'Follow-up Visit',
-    'Annual Checkup',
+    'Follow-up',
     'Urgent Care',
+    'Preventative Care',
     'Specialist Referral',
-    'Vaccination',
-    'Lab Results Review'
+    'Annual Checkup'
   ]
 
+  // Initialize doctor availability data
   useEffect(() => {
-    checkMLHealth()
-    if (patient) {
-      setFormData(prev => ({
-        ...prev,
-        doctor: patient.appointments?.[0]?.doctor || '',
-        preferredTime: patient.appointments?.[0]?.time || ''
-      }))
-    }
-  }, [patient])
+    const availability = generateDoctorAvailability()
+    setDoctorAvailability(availability)
+  }, [])
 
-  const checkMLHealth = async () => {
-    try {
-      const health = await apiService.checkMLHealth()
-      setMLHealth(health)
-    } catch (error) {
-      console.error('Failed to check ML health:', error)
+  // Check ML service health
+  useEffect(() => {
+    const checkMLServiceHealth = async () => {
+      try {
+        const response = await apiService.getMLHealth()
+        setMLHealth(response.data)
+      } catch (error) {
+        console.error('Failed to fetch ML service health:', error)
+        setMLHealth({ ml_service_available: false, models_loaded: false })
+      }
     }
-  }
+    checkMLServiceHealth()
+  }, [])
 
-  const handleDateChange = async (date: string) => {
-    setFormData(prev => ({ ...prev, date }))
+  // Handle doctor selection
+  const handleDoctorSelect = (doctorId: string) => {
+    setFormData(prev => ({ ...prev, doctor: doctorId, date: '', time: '' }))
+    setSelectedTimeSlot(null)
+    setTimeSlotForecast(null)
     
-    if (date && formData.doctor) {
-      await getOptimalTimes(date, formData.doctor, formData.appointmentType)
-    }
+    const dates = getAvailableDates(doctorId, doctorAvailability)
+    setAvailableDates(dates)
+    setAvailableTimeSlots([])
+    setCurrentStep('date')
   }
 
-  const handleDoctorChange = async (doctor: string) => {
-    setFormData(prev => ({ ...prev, doctor }))
+  // Handle date selection
+  const handleDateSelect = (date: string) => {
+    setFormData(prev => ({ ...prev, date, time: '' }))
+    setSelectedTimeSlot(null)
+    setTimeSlotForecast(null)
     
-    if (formData.date && doctor) {
-      await getOptimalTimes(formData.date, doctor, formData.appointmentType)
+    const timeSlots = getAvailableTimeSlots(formData.doctor, date, doctorAvailability)
+    setAvailableTimeSlots(timeSlots)
+    setCurrentStep('time')
+  }
+
+  // Handle time slot selection
+  const handleTimeSlotSelect = async (timeSlot: TimeSlot) => {
+    if (!timeSlot.available) return
+    
+    setFormData(prev => ({ ...prev, time: timeSlot.time }))
+    setSelectedTimeSlot(timeSlot)
+    
+    // Get ML forecast for the selected time slot
+    if (mlHealth.ml_service_available && mlHealth.models_loaded) {
+      setIsLoading(true)
+      try {
+        const forecast = await apiService.getOptimalAppointmentTimes(
+          formData.date,
+          formData.doctor,
+          formData.appointmentType,
+          {}, // patient preferences
+          0,  // flu cases
+          0,  // covid cases
+          0   // staff on duty
+        )
+        
+        // Find the forecast for the selected time slot
+        const slotForecast = forecast.data?.all_slots?.find(
+          (slot: any) => slot.time === timeSlot.time
+        )
+        
+        if (slotForecast) {
+          setTimeSlotForecast(slotForecast)
+        }
+      } catch (error) {
+        console.error('Failed to get ML forecast:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
+    
+    setCurrentStep('details')
   }
 
-  const getOptimalTimes = async (date: string, doctor: string, appointmentType: string) => {
-    if (!date || !doctor) return
-
-    setIsLoading(true)
-    try {
-      const result = await apiService.getOptimalAppointmentTimes(
-        date,
-        doctor,
-        appointmentType,
-        patientPreferences
-      )
-      setForecast(result)
-    } catch (error) {
-      console.error('Failed to get optimal times:', error)
-      setForecast(null)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSlotSelect = (slot: OptimalTimeSlot) => {
-    setSelectedSlot(slot)
-    setFormData(prev => ({ ...prev, preferredTime: slot.time }))
-  }
-
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!isAuthenticated) {
-      alert('Please log in to book an appointment')
+      setBookingError('Please log in to book an appointment')
       return
     }
 
-    if (!selectedSlot) {
-      alert('Please select an appointment time')
+    if (!selectedTimeSlot) {
+      setBookingError('Please select an appointment time')
       return
     }
 
     setIsLoading(true)
+    setBookingError(null)
+    setShowSuccessAlert(false)
+
     try {
       const appointmentData = {
         patientId: patient?.id || '',
         date: formData.date,
-        time: selectedSlot.time,
+        time: formData.time,
         doctor: formData.doctor,
         type: formData.appointmentType,
-        status: 'scheduled' as const,
-        notes: formData.reason
+        reason: formData.reason,
+        notes: formData.notes,
+        status: 'scheduled' as const
       }
 
-      const result = await apiService.createAppointment(appointmentData)
+      await addAppointment(appointmentData)
       
-      if (result.success) {
-        alert('Appointment booked successfully!')
-        // Reset form
-        setFormData({
-          date: '',
-          doctor: '',
-          appointmentType: 'General Consultation',
-          reason: '',
-          preferredTime: '',
-          notes: ''
+      // Call quantum scheduler to predict delays
+      try {
+        const quantumResponse = await fetch('/api/ml/quantum/delay-prediction', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            appointment_time: formData.time,
+            doctor_id: formData.doctor,
+            severity_score: 5 // Default severity score
+          }),
         })
-        setForecast(null)
-        setSelectedSlot(null)
-      } else {
-        alert('Failed to book appointment. Please try again.')
+
+        if (quantumResponse.ok) {
+          const quantumResult = await quantumResponse.json()
+          setQuantumDelayInfo(quantumResult.data)
+        }
+      } catch (quantumError) {
+        console.error('Quantum delay prediction failed:', quantumError)
+        // Continue with appointment booking even if quantum prediction fails
       }
+      
+      setShowSuccessAlert(true)
+      setBookingError(null)
+      
+      // Reset form
+      setFormData({
+        doctor: '',
+        date: '',
+        time: '',
+        appointmentType: 'General Consultation',
+        reason: '',
+        notes: ''
+      })
+      setSelectedTimeSlot(null)
+      setTimeSlotForecast(null)
+      setCurrentStep('doctor')
+      
     } catch (error) {
       console.error('Failed to book appointment:', error)
-      alert('An error occurred while booking your appointment.')
+      setBookingError('An error occurred while booking your appointment. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const getSlotBadgeVariant = (score: number) => {
-    if (score >= 8) return 'default' // Excellent
-    if (score >= 6) return 'secondary' // Good
-    if (score >= 4) return 'outline' // Fair
-    return 'destructive' // Poor
+  // Get time slot speed feedback
+  const getTimeSlotSpeed = (forecast: any) => {
+    if (!forecast) return 'unknown'
+    
+    const waitTime = forecast.estimated_wait_time
+    if (waitTime <= 15) return 'fast'
+    if (waitTime <= 30) return 'okay'
+    return 'slow'
   }
 
-  const getSlotBadgeText = (score: number) => {
-    if (score >= 8) return 'Excellent'
-    if (score >= 6) return 'Good'
-    if (score >= 4) return 'Fair'
-    return 'Busy'
+  // Get speed badge variant
+  const getSpeedBadgeVariant = (speed: string) => {
+    switch (speed) {
+      case 'fast': return 'default'
+      case 'okay': return 'secondary'
+      case 'slow': return 'destructive'
+      default: return 'outline'
+    }
+  }
+
+  // Get speed badge text
+  const getSpeedBadgeText = (speed: string) => {
+    switch (speed) {
+      case 'fast': return 'Fast'
+      case 'okay': return 'Okay'
+      case 'slow': return 'Slow'
+      default: return 'Unknown'
+    }
+  }
+
+  // Get doctor name from ID
+  const getDoctorName = (doctorId: string) => {
+    const doctor = doctorAvailability.find(d => d.doctorId === doctorId)
+    return doctor?.doctorName || doctorId
   }
 
   return (
@@ -198,7 +290,7 @@ export function SmartAppointmentBooking({ className }: SmartAppointmentBookingPr
             )}
           </div>
           <CardDescription>
-            Get AI-powered recommendations for the best appointment times based on historical data and current conditions.
+            Book your appointment with AI-powered scheduling and availability checking
           </CardDescription>
         </CardHeader>
 
@@ -212,255 +304,345 @@ export function SmartAppointmentBooking({ className }: SmartAppointmentBookingPr
             </Alert>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date">Preferred Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  required
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
+          {showSuccessAlert && (
+            <Alert className="border-green-200 bg-green-50">
+              <CalendarIcon className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                <strong>Appointment Booked Successfully!</strong><br />
+                Your appointment with {getDoctorName(formData.doctor)} on {formData.date} at {formData.time} has been confirmed. 
+                You can view it in your <a href="/patient-portal" className="underline font-medium">Patient Portal</a>.
+              </AlertDescription>
+            </Alert>
+          )}
 
-              <div className="space-y-2">
-                <Label htmlFor="doctor">Doctor</Label>
-                <Select value={formData.doctor} onValueChange={handleDoctorChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a doctor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {doctors.map((doctor) => (
-                      <SelectItem key={doctor.id} value={doctor.name}>
-                        {doctor.name} - {doctor.specialty}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="appointmentType">Appointment Type</Label>
-                <Select 
-                  value={formData.appointmentType} 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, appointmentType: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {appointmentTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="reason">Reason for Visit</Label>
-                <Input
-                  id="reason"
-                  value={formData.reason}
-                  onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
-                  placeholder="Brief description of your concern"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowPreferences(!showPreferences)}
-              >
-                <BrainIcon className="h-4 w-4 mr-2" />
-                {showPreferences ? 'Hide' : 'Show'} AI Preferences
-              </Button>
-            </div>
-
-            {showPreferences && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">AI Optimization Preferences</CardTitle>
-                  <CardDescription>
-                    Help the AI find the best appointment time for you
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Preferred Times</Label>
-                      <Select 
-                        value={patientPreferences.preferred_times?.[0] || ''} 
-                        onValueChange={(value) => setPatientPreferences(prev => ({ 
-                          ...prev, 
-                          preferred_times: value ? [value] : [] 
-                        }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select preferred time" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="09:00">Morning (9:00 AM)</SelectItem>
-                          <SelectItem value="10:00">Late Morning (10:00 AM)</SelectItem>
-                          <SelectItem value="14:00">Afternoon (2:00 PM)</SelectItem>
-                          <SelectItem value="15:00">Late Afternoon (3:00 PM)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Urgency Level</Label>
-                      <Select 
-                        value={patientPreferences.urgency_level || 'medium'} 
-                        onValueChange={(value: 'low' | 'medium' | 'high') => setPatientPreferences(prev => ({ 
-                          ...prev, 
-                          urgency_level: value 
-                        }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="low">Low - Flexible timing</SelectItem>
-                          <SelectItem value="medium">Medium - Prefer optimal times</SelectItem>
-                          <SelectItem value="high">High - Need earliest available</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+          {quantumDelayInfo && (
+            <Alert className={`${quantumDelayInfo.delay_expected ? 'border-orange-200 bg-orange-50 text-orange-800' : 'border-blue-200 bg-blue-50 text-blue-800'}`}>
+              <BrainIcon className="h-4 w-4" />
+              <AlertDescription>
+                <div className="space-y-2">
+                  <div className="font-semibold">
+                    🧠 Quantum Scheduler Analysis
                   </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {forecast && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <ClockIcon className="h-5 w-5 text-primary" />
-                    <CardTitle>AI-Recommended Time Slots</CardTitle>
-                    <Badge variant={forecast.ml_enhanced ? 'default' : 'secondary'}>
-                      {forecast.forecasting_confidence} Confidence
-                    </Badge>
+                  <div>
+                    {quantumDelayInfo.delay_expected ? (
+                      <>
+                        <div className="font-medium">⚠️ Potential Delay Expected</div>
+                        <div>Estimated delay: {quantumDelayInfo.estimated_delay_minutes} minutes</div>
+                        <div className="text-sm">Reason: {quantumDelayInfo.reason}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="font-medium">✅ On-Time Appointment</div>
+                        <div>Your appointment is expected to be on time</div>
+                        <div className="text-sm">Reason: {quantumDelayInfo.reason}</div>
+                      </>
+                    )}
                   </div>
-                  <CardDescription>
-                    Based on historical data, current conditions, and your preferences
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-                    {forecast.optimal_slots.map((slot, index) => (
-                      <Card
-                        key={slot.time}
-                        className={`cursor-pointer transition-all ${
-                          selectedSlot?.time === slot.time
-                            ? 'ring-2 ring-primary bg-primary/5'
-                            : 'hover:bg-accent/50'
-                        }`}
-                        onClick={() => handleSlotSelect(slot)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="font-medium">{slot.time}</div>
-                            <Badge variant={getSlotBadgeVariant(slot.optimal_score)}>
-                              {getSlotBadgeText(slot.optimal_score)}
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <div>Wait: ~{slot.estimated_wait_time} min</div>
-                            <div>Efficiency: {slot.efficiency.toFixed(1)}/10</div>
-                            {slot.predicted_patients && (
-                              <div>Patients: {slot.predicted_patients}</div>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-2">
-                            {slot.recommendation}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                  <div className="text-xs text-muted-foreground">
+                    Powered by Grover's Quantum Algorithm • {quantumDelayInfo.queue_status?.grover_algorithm_results?.quantum_advantage?.theoretical_advantage}
                   </div>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
-                  {forecast.insights.length > 0 && (
-                    <Alert>
-                      <BrainIcon className="h-4 w-4" />
-                      <AlertDescription>
-                        <div className="font-medium mb-1">AI Insights:</div>
-                        <ul className="list-disc list-inside space-y-1">
-                          {forecast.insights.map((insight, index) => (
-                            <li key={index}>{insight}</li>
-                          ))}
-                        </ul>
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+          {bookingError && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {bookingError}
+              </AlertDescription>
+            </Alert>
+          )}
 
-            {isLoading && (
-              <div className="flex items-center justify-center py-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Step 1: Doctor Selection */}
+            {currentStep === 'doctor' && (
+              <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                  <span>Getting AI recommendations...</span>
+                  <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                    1
+                  </div>
+                  <h3 className="text-lg font-semibold">Select a Doctor</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {doctorAvailability.map((doctor) => (
+                    <Card 
+                      key={doctor.doctorId}
+                      className={`cursor-pointer transition-all hover:shadow-md ${
+                        formData.doctor === doctor.doctorId ? 'ring-2 ring-primary bg-primary/5' : ''
+                      }`}
+                      onClick={() => handleDoctorSelect(doctor.doctorId)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium">{doctor.doctorName}</h4>
+                            <p className="text-sm text-muted-foreground">{doctor.specialty}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Working: {doctor.workingDays.map(d => 
+                                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d]
+                              ).join(', ')}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Hours: {doctor.workingHours.start}:00 - {doctor.workingHours.end}:00
+                            </p>
+                          </div>
+                          {formData.doctor === doctor.doctorId && (
+                            <CheckCircleIcon className="h-5 w-5 text-primary" />
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Additional Notes (Optional)</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Any additional information you'd like to share..."
-                rows={3}
-              />
-            </div>
+            {/* Step 2: Date Selection */}
+            {currentStep === 'date' && formData.doctor && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                    2
+                  </div>
+                  <h3 className="text-lg font-semibold">Select a Date</h3>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCurrentStep('doctor')}
+                  >
+                    Change Doctor
+                  </Button>
+                </div>
+                
+                <div className="bg-muted/30 p-4 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Selected: <strong>{getDoctorName(formData.doctor)}</strong>
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Available dates for the next 30 days:
+                  </p>
+                </div>
 
-            {!isAuthenticated && (
-              <Alert>
-                <AlertDescription>
-                  <strong>Step 1:</strong> Please log in to your patient portal first.
-                  <a href="/patient-portal" className="underline ml-1">Go to Patient Portal</a>
-                </AlertDescription>
-              </Alert>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                  {availableDates.slice(0, 12).map((date) => (
+                    <Button
+                      key={date}
+                      type="button"
+                      variant={formData.date === date ? "default" : "outline"}
+                      className="text-xs"
+                      onClick={() => handleDateSelect(date)}
+                    >
+                      {new Date(date).toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </Button>
+                  ))}
+                </div>
+              </div>
             )}
 
-            {isAuthenticated && !selectedSlot && !showPreferences && (
-              <Alert>
-                <AlertDescription>
-                  <strong>Step 2:</strong> Click "Show AI Preferences" above to see available time slots and select one.
-                </AlertDescription>
-              </Alert>
+            {/* Step 3: Time Slot Selection */}
+            {currentStep === 'time' && formData.date && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                    3
+                  </div>
+                  <h3 className="text-lg font-semibold">Select a Time Slot</h3>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCurrentStep('date')}
+                  >
+                    Change Date
+                  </Button>
+                </div>
+                
+                <div className="bg-muted/30 p-4 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    <strong>{getDoctorName(formData.doctor)}</strong> - {new Date(formData.date).toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {availableTimeSlots.map((slot) => {
+                    const speed = slot.forecast ? getTimeSlotSpeed(slot.forecast) : 'unknown'
+                    return (
+                      <Card
+                        key={slot.time}
+                        className={`cursor-pointer transition-all ${
+                          slot.available 
+                            ? selectedTimeSlot?.time === slot.time
+                              ? 'ring-2 ring-primary bg-primary/5'
+                              : 'hover:bg-accent/50'
+                            : 'opacity-60 bg-muted cursor-not-allowed'
+                        }`}
+                        onClick={() => handleTimeSlotSelect(slot)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="font-medium text-sm">{slot.time}</div>
+                            <div className="flex items-center gap-1">
+                              {slot.available ? (
+                                <>
+                                  <CheckCircleIcon className="h-4 w-4 text-green-600" />
+                                  {slot.forecast && (
+                                    <Badge 
+                                      variant={getSpeedBadgeVariant(speed)} 
+                                      className="text-xs"
+                                    >
+                                      {getSpeedBadgeText(speed)}
+                                    </Badge>
+                                  )}
+                                </>
+                              ) : (
+                                <XCircleIcon className="h-4 w-4 text-red-600" />
+                              )}
+                            </div>
+                          </div>
+                          {slot.available ? (
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              <div>Available</div>
+                              {slot.forecast && (
+                                <>
+                                  <div>Wait: ~{slot.forecast.estimated_wait_time} min</div>
+                                  <div>Score: {slot.forecast.optimal_score.toFixed(1)}/10</div>
+                                </>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground">
+                              {slot.reason}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                </div>
+              </div>
             )}
 
-            {isAuthenticated && !selectedSlot && showPreferences && (
-              <Alert>
-                <AlertDescription>
-                  <strong>Step 3:</strong> Select a recommended time slot from the AI suggestions above.
-                </AlertDescription>
-              </Alert>
-            )}
+            {/* Step 4: Appointment Details */}
+            {currentStep === 'details' && selectedTimeSlot && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-medium">
+                    4
+                  </div>
+                  <h3 className="text-lg font-semibold">Appointment Details</h3>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setCurrentStep('time')}
+                  >
+                    Change Time
+                  </Button>
+                </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={!isAuthenticated || !selectedSlot || isLoading}
-            >
-              <CalendarIcon className="h-4 w-4 mr-2" />
-              {isLoading ? 'Booking...' : 
-               !isAuthenticated ? 'Please Log In First' :
-               !selectedSlot ? 'Select a Time Slot First' :
-               'Book Smart Appointment'}
-            </Button>
+                {/* Selected Time Slot with Forecast */}
+                <Card className="border-blue-200 bg-blue-50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ClockIcon className="h-5 w-5 text-blue-600" />
+                      <span className="font-medium text-blue-800">Selected Time Slot</span>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-blue-800 font-medium">{selectedTimeSlot.time}</span>
+                        {timeSlotForecast && (
+                          <Badge variant={getSpeedBadgeVariant(getTimeSlotSpeed(timeSlotForecast))}>
+                            {getSpeedBadgeText(getTimeSlotSpeed(timeSlotForecast))}
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <p className="text-sm text-blue-700">
+                        <strong>{getDoctorName(formData.doctor)}</strong> • {new Date(formData.date).toLocaleDateString('en-US', { 
+                          weekday: 'long', 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })}
+                      </p>
+
+                      {timeSlotForecast && (
+                        <div className="text-sm text-blue-700 space-y-1">
+                          <div>Estimated wait: ~{timeSlotForecast.estimated_wait_time} minutes</div>
+                          <div>Efficiency: {timeSlotForecast.efficiency.toFixed(1)}/10</div>
+                          <div className="text-xs">{timeSlotForecast.recommendation}</div>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Appointment Details Form */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="appointmentType">Appointment Type</Label>
+                    <Select
+                      value={formData.appointmentType}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, appointmentType: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select appointment type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {appointmentTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="reason">Reason for Visit</Label>
+                    <Input
+                      id="reason"
+                      value={formData.reason}
+                      onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
+                      placeholder="Brief description of your concern"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Any additional information you'd like to share..."
+                    rows={3}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={!isAuthenticated || !selectedTimeSlot || isLoading}
+                >
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {isLoading ? 'Booking...' : 'Book Appointment'}
+                </Button>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>

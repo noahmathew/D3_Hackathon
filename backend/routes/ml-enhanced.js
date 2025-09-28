@@ -162,6 +162,61 @@ router.get('/health', async (req, res) => {
   }
 });
 
+// Quantum Delay Prediction
+router.post('/quantum/delay-prediction', async (req, res) => {
+  try {
+    const { appointment_time, doctor_id, severity_score } = req.body;
+
+    if (!appointment_time) {
+      return res.status(400).json({
+        success: false,
+        error: 'appointment_time is required'
+      });
+    }
+
+    const result = await mlService.predictQuantumDelay(
+      appointment_time,
+      doctor_id || 'dr-smith',
+      severity_score || 5
+    );
+
+    res.json({
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Quantum delay prediction error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
+// Quantum Queue Status
+router.get('/quantum/queue-status', async (req, res) => {
+  try {
+    const result = await mlService.getQuantumQueueStatus();
+
+    res.json({
+      success: true,
+      data: result,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('Quantum queue status error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      details: error.message
+    });
+  }
+});
+
 // Comprehensive Healthcare Analytics Dashboard
 router.get('/analytics/dashboard', async (req, res) => {
   try {

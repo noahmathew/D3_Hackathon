@@ -1,0 +1,41 @@
+patient_id,arrival_time,severity_score,department,condition,doctor_needed,wait_time_minutes,priority_level,is_emergency
+P001,09:15,8,ER,Emergency Surgery,Cardiologist,45,High,True
+P002,09:30,6,Cardiology,Heart Attack,Cardiologist,30,High,True
+P003,09:45,4,Internal Medicine,High Blood Pressure,General Practitioner,20,Medium,False
+P004,10:00,9,ER,Trauma,Emergency Physician,60,Critical,True
+P005,10:15,3,Pediatrics,Fever,Pediatrician,15,Low,False
+P006,10:30,7,Orthopedics,Broken Leg,Orthopedic Surgeon,35,High,False
+P007,10:45,5,Neurology,Migraine,Neurologist,25,Medium,False
+P008,11:00,2,Dermatology,Skin Rash,Dermatologist,10,Low,False
+P009,11:15,8,ER,Stroke,Neurologist,50,Critical,True
+P010,11:30,4,Internal Medicine,Diabetes Check,General Practitioner,18,Medium,False
+P011,11:45,6,Cardiology,Chest Pain,Cardiologist,32,High,False
+P012,12:00,3,Pediatrics,Vaccination,Pediatrician,12,Low,False
+P013,12:15,7,Orthopedics,Back Pain,Orthopedic Surgeon,38,High,False
+P014,12:30,5,Neurology,Seizure,Neurologist,28,Medium,False
+P015,12:45,9,ER,Gunshot Wound,Emergency Physician,65,Critical,True
+P016,13:00,4,Internal Medicine,Annual Checkup,General Practitioner,16,Medium,False
+P017,13:15,6,Cardiology,Heart Palpitations,Cardiologist,30,High,False
+P018,13:30,3,Pediatrics,Ear Infection,Pediatrician,14,Low,False
+P019,13:45,8,ER,Car Accident,Emergency Physician,55,Critical,True
+P020,14:00,5,Neurology,Memory Issues,Neurologist,22,Medium,False
+P021,14:15,4,Internal Medicine,Cold Symptoms,General Practitioner,19,Medium,False
+P022,14:30,7,Orthopedics,Knee Injury,Orthopedic Surgeon,40,High,False
+P023,14:45,2,Dermatology,Acne Treatment,Dermatologist,8,Low,False
+P024,15:00,6,Cardiology,Shortness of Breath,Cardiologist,33,High,False
+P025,15:15,3,Pediatrics,Allergy Consultation,Pediatrician,13,Low,False
+P026,15:30,8,ER,Burn Injury,Emergency Physician,48,Critical,True
+P027,15:45,5,Neurology,Headache,Neurologist,24,Medium,False
+P028,16:00,4,Internal Medicine,Medication Review,General Practitioner,17,Medium,False
+P029,16:15,7,Orthopedics,Shoulder Pain,Orthopedic Surgeon,36,High,False
+P030,16:30,6,Cardiology,Irregular Heartbeat,Cardiologist,31,High,False
+P031,16:45,3,Pediatrics,Developmental Check,Pediatrician,11,Low,False
+P032,17:00,9,ER,Overdose,Emergency Physician,70,Critical,True
+P033,17:15,5,Neurology,Tremors,Neurologist,26,Medium,False
+P034,17:30,4,Internal Medicine,Weight Management,General Practitioner,15,Medium,False
+P035,17:45,8,ER,Severe Allergic Reaction,Emergency Physician,52,Critical,True
+P036,18:00,6,Cardiology,Heart Murmur,Cardiologist,29,High,False
+P037,18:15,3,Pediatrics,Behavioral Issues,Pediatrician,16,Low,False
+P038,18:30,7,Orthopedics,Hip Pain,Orthopedic Surgeon,42,High,False
+P039,18:45,5,Neurology,Depression,Neurologist,27,Medium,False
+P040,19:00,4,Internal Medicine,Hypertension,General Practitioner,21,Medium,False
